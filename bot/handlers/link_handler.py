@@ -56,7 +56,7 @@ async def handle_link(message: Message, state: FSMContext) -> None:
     )
 
 
-@router.message(DownloadStates.waiting_for_link)
+@router.message(DownloadStates.waiting_for_link, ~F.document)
 async def handle_non_text(message: Message) -> None:
     await message.answer("Please send a text link.")
 
@@ -149,9 +149,7 @@ async def handle_download_type(callback: CallbackQuery, state: FSMContext) -> No
         logger.error(f"Error processing link: {e}")
         await status_msg.edit_text(f"Error: {e}")
     finally:
-        current_state = await state.get_state()
-        if current_state == DownloadStates.downloading:
-            await state.set_state(DownloadStates.waiting_for_link)
+        await state.clear()
 
 
 async def _extract_info_async(downloader: Any, url: str) -> dict:
