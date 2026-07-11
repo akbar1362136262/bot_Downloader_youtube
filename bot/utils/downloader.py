@@ -78,8 +78,8 @@ class YouTubeDownloader(BaseDownloader):
             **self._common_opts(),
             **self._cookies_opts(),
             "noplaylist": True,
-            "ignoreerrors": False,
             "socket_timeout": 30,
+            "extractor_args": {"youtube": {"skip": ["dash", "hls"]}},
         }
         with yt_dlp.YoutubeDL(opts) as ydl:
             return ydl.extract_info(url, download=False)
@@ -139,7 +139,7 @@ class YouTubeDownloader(BaseDownloader):
                     **self._common_opts(),
                     **cookies,
                     "noplaylist": True,
-                    "format": "bestaudio[ext=m4a]/bestaudio/best",
+                    "format": "bestaudio/best",
                     "postprocessors": [{
                         "key": "FFmpegExtractAudio",
                         "preferredcodec": "mp3",
@@ -152,7 +152,7 @@ class YouTubeDownloader(BaseDownloader):
                     **self._common_opts(),
                     **cookies,
                     "noplaylist": True,
-                    "format": "bestaudio[ext=m4a]/bestaudio/best",
+                    "format": "bestaudio/best",
                     "progress_hooks": [self._progress_hook],
                 }
         else:
@@ -160,7 +160,7 @@ class YouTubeDownloader(BaseDownloader):
             target_height = height_map.get(format_id, 720)
 
             if HAS_FFMPEG:
-                fmt = f"bestvideo[height<={target_height}][ext=mp4]+bestaudio[ext=m4a]/best[height<={target_height}]"
+                fmt = f"bestvideo[height<={target_height}]+bestaudio/best[height<={target_height}]"
                 opts = {
                     **self._common_opts(),
                     **cookies,
