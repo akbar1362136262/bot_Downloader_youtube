@@ -165,7 +165,7 @@ async def handle_download_type(callback: CallbackQuery, state: FSMContext) -> No
 
     except Exception as e:
         logger.error(f"Error processing link: {e}")
-        await status_msg.edit_text(f"An error occurred: {e}")
+        await status_msg.edit_text(f"Error: {e}")
     finally:
         current_state = await state.get_state()
         if current_state == DownloadStates.downloading:
@@ -179,7 +179,7 @@ async def _extract_info_async(downloader: Any, url: str) -> dict | None:
         return await asyncio.wait_for(future, timeout=60.0)
     except asyncio.TimeoutError:
         logger.warning(f"Extract info timed out for URL: {url}")
-        return None
+        raise TimeoutError("Request timed out (60s). Try again or use a shorter video.")
     except Exception as e:
         logger.error(f"Extract info error for {url}: {e}")
-        return None
+        raise
