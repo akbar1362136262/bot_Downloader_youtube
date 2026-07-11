@@ -80,9 +80,11 @@ class YouTubeDownloader(BaseDownloader):
             "noplaylist": True,
             "ignoreerrors": False,
             "socket_timeout": 30,
+            "geo_bypass": True,
+            "geo_bypass_country": "US",
             "extractor_args": {
                 "youtube": {
-                    "skip": ["dash", "hls"],
+                    "skip": ["dash", "hls", "webpage"],
                     "player_client": ["android", "web"],
                 },
             },
