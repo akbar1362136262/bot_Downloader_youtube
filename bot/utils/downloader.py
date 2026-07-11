@@ -85,7 +85,7 @@ class YouTubeDownloader(BaseDownloader):
             "extractor_args": {
                 "youtube": {
                     "skip": ["dash", "hls", "webpage"],
-                    "player_client": ["android", "web"],
+                    "player_client": ["android", "android_embedded"],
                 },
             },
         }
@@ -142,14 +142,14 @@ class YouTubeDownloader(BaseDownloader):
 
         cookies = self._cookies_opts()
         if is_audio:
-            extractor_args = {"youtube": {"player_client": ["android", "web"]}}
+            extractor_args = {"youtube": {"player_client": ["android", "android_embedded"], "skip": ["dash", "hls", "webpage"]}}
             if HAS_FFMPEG:
                 opts: dict[str, Any] = {
                     **self._common_opts(),
                     **cookies,
                     "noplaylist": True,
                     "extractor_args": extractor_args,
-                    "format": "bestaudio/best",
+                    "format": "bestaudio[ext=m4a]/bestaudio/best",
                     "postprocessors": [{
                         "key": "FFmpegExtractAudio",
                         "preferredcodec": "mp3",
@@ -163,16 +163,16 @@ class YouTubeDownloader(BaseDownloader):
                     **cookies,
                     "noplaylist": True,
                     "extractor_args": extractor_args,
-                    "format": "bestaudio/best",
+                    "format": "bestaudio[ext=m4a]/bestaudio/best",
                     "progress_hooks": [self._progress_hook],
                 }
         else:
             height_map = {"144p": 144, "240p": 240, "360p": 360, "480p": 480, "720p": 720, "1080p": 1080, "2k": 1440, "4k": 2160}
             target_height = height_map.get(format_id, 720)
-            extractor_args = {"youtube": {"player_client": ["android", "web"]}}
+            extractor_args = {"youtube": {"player_client": ["android", "android_embedded"], "skip": ["dash", "hls", "webpage"]}}
 
             if HAS_FFMPEG:
-                fmt = f"bestvideo[height<={target_height}]+bestaudio/best[height<={target_height}]"
+                fmt = f"bestvideo[height<={target_height}][ext=mp4]+bestaudio[ext=m4a]/best[height<={target_height}]"
                 opts = {
                     **self._common_opts(),
                     **cookies,
