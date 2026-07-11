@@ -70,9 +70,9 @@ async def main() -> None:
 
     dp.include_router(errors.router)
     dp.include_router(start.router)
+    dp.include_router(cookies_handler.router)
     dp.include_router(link_handler.router)
     dp.include_router(quality_choice.router)
-    dp.include_router(cookies_handler.router)
 
     dp.startup.register(on_startup)
     dp.shutdown.register(on_shutdown)
