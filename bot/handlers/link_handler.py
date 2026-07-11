@@ -85,24 +85,6 @@ async def handle_download_type(callback: CallbackQuery, state: FSMContext) -> No
 
         info = await _extract_info_async(downloader, url)
 
-        if not info:
-            msg = (
-                "Could not fetch media information.\n"
-                "Possible causes:\n"
-                "• Invalid or private link\n"
-                "• Network timeout (try again)\n"
-                "• Age-restricted content\n"
-                "• Live stream (not supported)"
-            )
-            if platform == "instagram":
-                msg += (
-                    "\n\n📌 Instagram needs cookies.\n"
-                    "• Run bot as Administrator (right-click cmd → Run as admin)\n"
-                    "• Or save cookies.txt in downloads/ folder"
-                )
-            await status_msg.edit_text(msg)
-            return
-
         title = info.get("title") or info.get("id", "Unknown")
         duration = info.get("duration")
 
@@ -172,11 +154,14 @@ async def handle_download_type(callback: CallbackQuery, state: FSMContext) -> No
             await state.set_state(DownloadStates.waiting_for_link)
 
 
-async def _extract_info_async(downloader: Any, url: str) -> dict | None:
+async def _extract_info_async(downloader: Any, url: str) -> dict:
     loop = asyncio.get_event_loop()
     try:
         future = loop.run_in_executor(None, downloader.extract_info, url)
-        return await asyncio.wait_for(future, timeout=60.0)
+        info = await asyncio.wait_for(future, timeout=60.0)
+        if not info:
+            raise RuntimeError("yt-dlp returned no data. The video may be private or unavailable.")
+        return info
     except asyncio.TimeoutError:
         logger.warning(f"Extract info timed out for URL: {url}")
         raise TimeoutError("Request timed out (60s). Try again or use a shorter video.")
