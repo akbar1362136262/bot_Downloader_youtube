@@ -11,21 +11,14 @@ router = Router()
 @router.message(Command("cookies"))
 async def cookies_help(message: Message) -> None:
     text = (
-        "<b>Instagram Cookie Setup</b>\n\n"
-        "To download Instagram content, the bot needs Instagram login cookies.\n\n"
-        "<b>Option 1: Upload cookies.txt file</b>\n"
-        "1. Open Instagram in your phone browser (Kiwi Browser supports extensions)\n"
-        "2. Install 'Get cookies.txt' extension from Chrome Web Store\n"
-        "3. Log into Instagram and tap the extension icon → Export\n"
-        "4. Send the exported .txt file to this bot\n\n"
-        "<b>Option 2: Run as Administrator (Windows)</b>\n"
-        "- Close Chrome, run the bot exe as Administrator\n"
-        "- The bot will extract cookies automatically\n\n"
-        "<b>Option 3: Desktop browser</b>\n"
-        "- Log into Instagram on your computer's Chrome\n"
-        "- Install 'Get cookies.txt' extension\n"
-        "- Export cookies and place next to the exe file\n\n"
-        "Send the .txt file now to upload cookies."
+        "<b>Cookie Setup</b>\n\n"
+        "Send a cookies.txt file to enable downloads.\n\n"
+        "<b>How to export cookies:</b>\n"
+        "1. Install 'Get cookies.txt' extension in Chrome/Kiwi\n"
+        "2. Log into the site (YouTube or Instagram)\n"
+        "3. Click the extension icon → Export\n"
+        "4. Send the .txt file here\n\n"
+        "The bot detects YouTube vs Instagram cookies automatically."
     )
     await message.answer(text)
 
@@ -38,19 +31,33 @@ async def handle_cookies_file(message: Message) -> None:
         return
 
     file = await message.bot.get_file(doc.file_id)
-    dest = settings.DOWNLOAD_DIR / "instagram_cookies.txt"
-    await message.bot.download_file(file.file_path, destination=dest)
 
-    content = dest.read_text(encoding="utf-8")
-    if "# Netscape HTTP Cookie File" not in content and "instagram" not in content.lower():
-        dest.unlink()
+    name_lower = doc.file_name.lower()
+
+    if "youtube" in name_lower or "youtu" in name_lower:
+        dest = settings.DOWNLOAD_DIR / "youtube_cookies.txt"
+    elif "instagram" in name_lower:
+        dest = settings.DOWNLOAD_DIR / "instagram_cookies.txt"
+    else:
         await message.answer(
-            "Invalid cookies file. Please export cookies from Instagram using "
-            "'Get cookies.txt' extension while logged into Instagram."
+            "Could not detect platform from filename. "
+            "Name your file youtube_cookies.txt or instagram_cookies.txt and try again."
         )
         return
 
-    logger.info(f"Instagram cookies saved to {dest}")
+    await message.bot.download_file(file.file_path, destination=dest)
+    content = dest.read_text(encoding="utf-8")
+
+    if "# Netscape HTTP Cookie File" not in content:
+        dest.unlink()
+        await message.answer(
+            "Invalid cookies file. Export using 'Get cookies.txt' extension "
+            "in Netscape format."
+        )
+        return
+
+    logger.info(f"Cookies saved to {dest}")
+    platform = "YouTube" if "youtube" in str(dest) else "Instagram"
     await message.answer(
-        "Instagram cookies saved successfully! Now you can download Instagram content."
+        f"{platform} cookies saved! Now you can download {platform} content."
     )

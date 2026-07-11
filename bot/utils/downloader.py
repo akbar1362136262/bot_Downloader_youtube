@@ -10,7 +10,7 @@ import yt_dlp
 from loguru import logger
 
 from bot.config import settings
-from bot.utils.cookies import ensure_instagram_cookies
+from bot.utils.cookies import ensure_instagram_cookies, ensure_youtube_cookies
 
 
 def check_ffmpeg() -> bool:
@@ -61,9 +61,17 @@ class BaseDownloader:
 
 
 class YouTubeDownloader(BaseDownloader):
+    def _cookies_opts(self) -> dict[str, Any]:
+        opts: dict[str, Any] = {}
+        cookies_file = ensure_youtube_cookies()
+        if cookies_file:
+            opts["cookiefile"] = cookies_file
+        return opts
+
     def extract_info(self, url: str) -> dict[str, Any]:
         opts: dict[str, Any] = {
             **self._common_opts(),
+            **self._cookies_opts(),
             "noplaylist": True,
             "socket_timeout": 30,
             "extractor_args": {"youtube": {"skip": ["dash", "hls"]}},
@@ -119,10 +127,12 @@ class YouTubeDownloader(BaseDownloader):
         self.progress = DownloadProgress()
         loop = asyncio.get_event_loop()
 
+        cookies = self._cookies_opts()
         if is_audio:
             if HAS_FFMPEG:
                 opts: dict[str, Any] = {
                     **self._common_opts(),
+                    **cookies,
                     "noplaylist": True,
                     "format": "bestaudio/best",
                     "postprocessors": [{
@@ -135,6 +145,7 @@ class YouTubeDownloader(BaseDownloader):
             else:
                 opts = {
                     **self._common_opts(),
+                    **cookies,
                     "noplaylist": True,
                     "format": "bestaudio/best",
                     "progress_hooks": [self._progress_hook],
@@ -147,6 +158,7 @@ class YouTubeDownloader(BaseDownloader):
                 fmt = f"bestvideo[height<={target_height}]+bestaudio/best[height<={target_height}]"
                 opts = {
                     **self._common_opts(),
+                    **cookies,
                     "noplaylist": True,
                     "format": fmt,
                     "merge_output_format": "mp4",
@@ -156,6 +168,7 @@ class YouTubeDownloader(BaseDownloader):
                 fmt = f"best[height<={target_height}]"
                 opts = {
                     **self._common_opts(),
+                    **cookies,
                     "noplaylist": True,
                     "format": fmt,
                     "progress_hooks": [self._progress_hook],

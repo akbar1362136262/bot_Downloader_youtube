@@ -82,3 +82,11 @@ def ensure_instagram_cookies() -> Optional[str]:
         logger.info(f"Using manual cookies file: {manual}")
         return str(manual)
     return extract_chrome_cookies()
+
+
+def ensure_youtube_cookies() -> Optional[str]:
+    manual = settings.DOWNLOAD_DIR / "youtube_cookies.txt"
+    if manual.exists():
+        logger.info(f"Using YouTube cookies file: {manual}")
+        return str(manual)
+    return None
