@@ -60,6 +60,13 @@ async def handle_cookies_file(message: Message, state: FSMContext) -> None:
     if "instagram" in name_lower or "instagram" in content.lower():
         platform = "instagram"
     elif "youtube" in name_lower or "youtube" in content.lower() or "youtu.be" in content:
+        if ".youtube.com" not in content:
+            await message.answer(
+                "No YouTube cookies found in this file. "
+                "Go to youtube.com in your browser, log in, "
+                "then export cookies from that page."
+            )
+            return
         platform = "youtube"
     else:
         await message.answer(
