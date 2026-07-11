@@ -78,6 +78,7 @@ class YouTubeDownloader(BaseDownloader):
             **self._common_opts(),
             **self._cookies_opts(),
             "noplaylist": True,
+            "ignoreerrors": False,
             "socket_timeout": 30,
             "extractor_args": {
                 "youtube": {
