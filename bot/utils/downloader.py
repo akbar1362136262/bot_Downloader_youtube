@@ -80,14 +80,6 @@ class YouTubeDownloader(BaseDownloader):
             "noplaylist": True,
             "ignoreerrors": False,
             "socket_timeout": 30,
-            "geo_bypass": True,
-            "geo_bypass_country": "US",
-            "extractor_args": {
-                "youtube": {
-                    "skip": ["dash", "hls", "webpage"],
-                    "player_client": ["android", "android_embedded"],
-                },
-            },
         }
         with yt_dlp.YoutubeDL(opts) as ydl:
             return ydl.extract_info(url, download=False)
@@ -142,13 +134,11 @@ class YouTubeDownloader(BaseDownloader):
 
         cookies = self._cookies_opts()
         if is_audio:
-            extractor_args = {"youtube": {"player_client": ["android", "android_embedded"], "skip": ["dash", "hls", "webpage"]}}
             if HAS_FFMPEG:
                 opts: dict[str, Any] = {
                     **self._common_opts(),
                     **cookies,
                     "noplaylist": True,
-                    "extractor_args": extractor_args,
                     "format": "bestaudio[ext=m4a]/bestaudio/best",
                     "postprocessors": [{
                         "key": "FFmpegExtractAudio",
@@ -162,14 +152,12 @@ class YouTubeDownloader(BaseDownloader):
                     **self._common_opts(),
                     **cookies,
                     "noplaylist": True,
-                    "extractor_args": extractor_args,
                     "format": "bestaudio[ext=m4a]/bestaudio/best",
                     "progress_hooks": [self._progress_hook],
                 }
         else:
             height_map = {"144p": 144, "240p": 240, "360p": 360, "480p": 480, "720p": 720, "1080p": 1080, "2k": 1440, "4k": 2160}
             target_height = height_map.get(format_id, 720)
-            extractor_args = {"youtube": {"player_client": ["android", "android_embedded"], "skip": ["dash", "hls", "webpage"]}}
 
             if HAS_FFMPEG:
                 fmt = f"bestvideo[height<={target_height}][ext=mp4]+bestaudio[ext=m4a]/best[height<={target_height}]"
@@ -177,7 +165,6 @@ class YouTubeDownloader(BaseDownloader):
                     **self._common_opts(),
                     **cookies,
                     "noplaylist": True,
-                    "extractor_args": extractor_args,
                     "format": fmt,
                     "merge_output_format": "mp4",
                     "progress_hooks": [self._progress_hook],
@@ -188,7 +175,6 @@ class YouTubeDownloader(BaseDownloader):
                     **self._common_opts(),
                     **cookies,
                     "noplaylist": True,
-                    "extractor_args": extractor_args,
                     "format": fmt,
                     "progress_hooks": [self._progress_hook],
                 }
