@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import base64
+import os
 import tempfile
 from pathlib import Path
 from typing import Optional
@@ -76,11 +78,29 @@ def extract_chrome_cookies() -> Optional[str]:
         return None
 
 
+def _cookies_from_env(platform: str) -> Optional[str]:
+    env_key = f"{platform.upper()}_COOKIES_B64"
+    b64 = os.environ.get(env_key)
+    if b64:
+        try:
+            content = base64.b64decode(b64).decode("utf-8")
+            dest = settings.DOWNLOAD_DIR / f"{platform}_cookies.txt"
+            dest.write_text(content, encoding="utf-8")
+            logger.info(f"Loaded {platform} cookies from env var {env_key}")
+            return str(dest)
+        except Exception as e:
+            logger.warning(f"Failed to decode {env_key}: {e}")
+    return None
+
+
 def ensure_instagram_cookies() -> Optional[str]:
     manual = settings.DOWNLOAD_DIR / "instagram_cookies.txt"
     if manual.exists():
         logger.info(f"Using manual cookies file: {manual}")
         return str(manual)
+    env = _cookies_from_env("instagram")
+    if env:
+        return env
     return extract_chrome_cookies()
 
 
@@ -89,4 +109,7 @@ def ensure_youtube_cookies() -> Optional[str]:
     if manual.exists():
         logger.info(f"Using YouTube cookies file: {manual}")
         return str(manual)
+    env = _cookies_from_env("youtube")
+    if env:
+        return env
     return None

@@ -1,3 +1,5 @@
+import base64
+
 from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
@@ -25,6 +27,14 @@ async def cookies_help(message: Message, state: FSMContext) -> None:
     await message.answer(text)
 
 
+def _save_cookies(content: str, platform: str) -> str:
+    filename = f"{platform}_cookies.txt"
+    dest = settings.DOWNLOAD_DIR / filename
+    dest.write_text(content, encoding="utf-8")
+    logger.info(f"Cookies saved to {dest}")
+    return str(dest)
+
+
 @router.message(F.document)
 async def handle_cookies_file(message: Message, state: FSMContext) -> None:
     await state.clear()
@@ -34,45 +44,44 @@ async def handle_cookies_file(message: Message, state: FSMContext) -> None:
         return
 
     file = await message.bot.get_file(doc.file_id)
-
-    name_lower = doc.file_name.lower()
-    content = None
-
-    if "youtube" in name_lower or "youtu" in name_lower:
-        dest = settings.DOWNLOAD_DIR / "youtube_cookies.txt"
-    elif "instagram" in name_lower:
-        dest = settings.DOWNLOAD_DIR / "instagram_cookies.txt"
-    else:
-        await message.bot.download_file(file.file_path, destination=settings.DOWNLOAD_DIR / "cookies_temp.txt")
-        content = (settings.DOWNLOAD_DIR / "cookies_temp.txt").read_text(encoding="utf-8")
-        if "instagram.com" in content:
-            dest = settings.DOWNLOAD_DIR / "instagram_cookies.txt"
-            (settings.DOWNLOAD_DIR / "cookies_temp.txt").rename(dest)
-        elif "youtube.com" in content or "youtu.be" in content:
-            dest = settings.DOWNLOAD_DIR / "youtube_cookies.txt"
-            (settings.DOWNLOAD_DIR / "cookies_temp.txt").rename(dest)
-        else:
-            (settings.DOWNLOAD_DIR / "cookies_temp.txt").unlink()
-            await message.answer(
-                "Could not detect platform. Name your file "
-                "youtube_cookies.txt or instagram_cookies.txt and try again."
-            )
-            return
-
-    if content is None:
-        await message.bot.download_file(file.file_path, destination=dest)
-        content = dest.read_text(encoding="utf-8")
+    temp = settings.DOWNLOAD_DIR / "cookies_temp.txt"
+    await message.bot.download_file(file.file_path, destination=temp)
+    content = temp.read_text(encoding="utf-8")
+    temp.unlink(missing_ok=True)
 
     if "# Netscape HTTP Cookie File" not in content:
-        dest.unlink(missing_ok=True)
         await message.answer(
             "Invalid cookies file. Export using 'Get cookies.txt' extension "
             "in Netscape format."
         )
         return
 
-    logger.info(f"Cookies saved to {dest}")
-    platform = "YouTube" if "youtube" in str(dest) else "Instagram"
-    await message.answer(
-        f"{platform} cookies saved! Now you can download {platform} content."
+    name_lower = doc.file_name.lower()
+    if "instagram" in name_lower or "instagram" in content.lower():
+        platform = "instagram"
+    elif "youtube" in name_lower or "youtube" in content.lower() or "youtu.be" in content:
+        platform = "youtube"
+    else:
+        await message.answer(
+            "Could not detect platform. Name your file "
+            "youtube_cookies.txt or instagram_cookies.txt and try again."
+        )
+        return
+
+    _save_cookies(content, platform)
+    b64 = base64.b64encode(content.encode()).decode()
+
+    msg = (
+        f"{'YouTube' if platform == 'youtube' else 'Instagram'} cookies saved!\n\n"
+        f"<b>For Railway persistence</b>, add this to your Railway Variables:\n\n"
+        f"<code>{platform.upper()}_COOKIES_B64</code> = <code>{b64[:50]}...{b64[-20:]}</code>\n\n"
+        f"(Full value copied below - copy it entirely)"
     )
+
+    await message.answer(msg)
+
+    chunks = []
+    for i in range(0, len(b64), 4000):
+        chunks.append(b64[i:i + 4000])
+    for chunk in chunks:
+        await message.answer(f"<code>{chunk}</code>")
